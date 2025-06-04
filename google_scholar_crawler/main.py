@@ -59,6 +59,7 @@ def enhance_image(image_path):
 def ocr_extract_text_from_image(image_path):
     """从图片中提取数字"""
     try:
+        
         # 增强图像并处理
         enhanced_path = enhance_image(image_path)
         img = Image.open(enhanced_path)
