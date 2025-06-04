@@ -44,7 +44,7 @@ def parse_citedby_from_html(author_id):
     """直接从HTML解析引用数，避免API限制"""
     try:
         # 创建Google Scholar URL
-        url = f"https://scholar.google.com/citations?hl=en&user={author_id}"
+        url = f"https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en"
         
         # 发送带自定义headers的请求
         headers = {'User-Agent': random.choice(USER_AGENTS)}
