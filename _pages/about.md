@@ -28,21 +28,6 @@ redirect_from:
 
 ---
 
-# 关于我
-
-## 学术资料
-我的Google Scholar个人资料和引用统计数据：
-
-<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>Google Scholar Citations <strong><span id='total_cit'>[loading]</span></strong></a>  
-<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>
-  <img src="https://img.shields.io/endpoint?url=https://github.com/<你的用户名>/<你的仓库>/results/gs_data_shieldsio.json">
-</a>
-
-<!-- 其他内容保持不变 -->
-
-
----
-
 <span class='anchor' id='education'></span>
 # 🎓 Education
 
