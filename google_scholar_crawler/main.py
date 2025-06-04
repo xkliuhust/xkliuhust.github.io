@@ -1,22 +1,36 @@
 import os
 import json
-from datetime import datetime
 import time
 import random
 import re
-import requests
+import logging
+from datetime import datetime
+from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-import pytesseract
 from PIL import Image, ImageEnhance
-import base64
+import pytesseract
+
+# 配置详细日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('scholar_scraper.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('GoogleScholarScraper')
+
+# 结果目录
+RESULTS_DIR = Path('results')
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 def setup_browser():
-    """配置无头浏览器进行网页渲染"""
+    """配置无头浏览器"""
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--disable-gpu')
@@ -31,202 +45,252 @@ def setup_browser():
     ]
     chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
     
+    logger.info("启动Chrome浏览器")
     return webdriver.Chrome(options=chrome_options)
+
+def save_artifact(content, filename):
+    """保存调试工件"""
+    path = RESULTS_DIR / filename
+    with open(path, 'w', encoding='utf-8') as f:
+        if isinstance(content, str):
+            f.write(content)
+        else:
+            json.dump(content, f, indent=2)
+    logger.info(f"保存工件: {path}")
+
+def capture_debug_screenshots(driver, prefix):
+    """捕获调试截图"""
+    try:
+        # 完整页面截图
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        full_screenshot = RESULTS_DIR / f"{prefix}_full_page_{timestamp}.png"
+        driver.save_screenshot(str(full_screenshot))
+        logger.info(f"保存完整页面截图: {full_screenshot}")
+        
+        # 捕获引文元素截图
+        try:
+            citations_element = driver.find_element(By.ID, "gsc_rsb_cit")
+            loc = citations_element.location
+            size = citations_element.size
+            
+            # 创建元素截图
+            left = loc['x']
+            top = loc['y']
+            right = left + size['width']
+            bottom = top + size['height']
+            
+            full_img = Image.open(full_screenshot)
+            element_img = full_img.crop((left, top, right, bottom))
+            element_path = RESULTS_DIR / f"{prefix}_citation_element_{timestamp}.png"
+            element_img.save(str(element_path))
+            logger.info(f"保存引文区域截图: {element_path}")
+            
+            # 尝试OCR处理
+            return ocr_extract_text_from_image(str(element_path))
+            
+        except Exception as e:
+            logger.warning(f"无法捕获引文元素截图: {str(e)}")
+            return 0
+            
+    except Exception as e:
+        logger.error(f"截图失败: {str(e)}")
+        return 0
 
 def enhance_image(image_path):
     """增强图像以提高OCR识别率"""
-    img = Image.open(image_path)
-    
-    # 提高对比度
-    enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(2.0)
-    
-    # 提高锐度
-    enhancer = ImageEnhance.Sharpness(img)
-    img = enhancer.enhance(2.0)
-    
-    # 提高亮度
-    enhancer = ImageEnhance.Brightness(img)
-    img = enhancer.enhance(1.2)
-    
-    # 转换为灰度图像
-    img = img.convert('L')
-    
-    enhanced_path = "enhanced_" + image_path
-    img.save(enhanced_path)
-    return enhanced_path
+    try:
+        img = Image.open(image_path)
+        
+        # 提高对比度
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(2.0)
+        
+        # 提高锐度
+        enhancer = ImageEnhance.Sharpness(img)
+        img = enhancer.enhance(2.0)
+        
+        # 提高亮度
+        enhancer = ImageEnhance.Brightness(img)
+        img = enhancer.enhance(1.2)
+        
+        # 转换为灰度图像
+        img = img.convert('L')
+        
+        enhanced_path = RESULTS_DIR / f"enhanced_{Path(image_path).name}"
+        img.save(str(enhanced_path))
+        logger.info(f"保存增强版图像: {enhanced_path}")
+        return str(enhanced_path)
+    except Exception as e:
+        logger.error(f"图像增强失败: {str(e)}")
+        return image_path
 
 def ocr_extract_text_from_image(image_path):
     """从图片中提取数字"""
     try:
-        
-        # 增强图像并处理
+        logger.info(f"尝试OCR识别: {image_path}")
         enhanced_path = enhance_image(image_path)
         img = Image.open(enhanced_path)
-        custom_config = r'--oem 3 --psm 6 outputbase digits'
+        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789'
         text = pytesseract.image_to_string(img, config=custom_config).strip()
         
-        # 提取所有数字并组合
+        # 提取所有数字
         digits = ''.join(filter(str.isdigit, text))
         if digits:
-            print(f"OCR识别结果: {digits}")
+            logger.info(f"OCR识别结果: {digits}")
             return int(digits)
         return 0
     except Exception as e:
-        print(f"OCR处理失败: {e}")
+        logger.error(f"OCR处理失败: {str(e)}")
         return 0
 
-def capture_element_screenshot(driver, element, filename):
-    """捕获特定元素的截图"""
-    # 滚动元素到视图中
-    driver.execute_script("arguments[0].scrollIntoView(true);", element)
-    time.sleep(0.5)  # 确保滚动完成
-    
-    # 获取元素位置
-    location = element.location
-    size = element.size
-    
-    # 保存整页截图
-    driver.save_screenshot('full_page.png')
-    
-    # 裁剪元素区域
-    img = Image.open('full_page.png')
-    left = location['x']
-    top = location['y']
-    right = left + size['width']
-    bottom = top + size['height']
-    
-    element_img = img.crop((left, top, right, bottom))
-    element_img.save(filename)
-    return filename
-
-def parse_citations_from_html_selenium(scholar_id):
-    """使用Selenium解析引文数并提供视觉备份"""
-    driver = setup_browser()
-    citations = 0
+def get_citations(driver, scholar_id):
+    """获取引文数量"""
+    url = f"https://scholar.google.com/citations?hl=en&user={scholar_id}"
+    logger.info(f"访问Google Scholar个人主页: {url}")
     
     try:
-        # 1. 访问Google Scholar个人页面
-        profile_url = f"https://scholar.google.com/citations?hl=en&user={scholar_id}"
-        driver.get(profile_url)
-        print(f"访问个人主页: {profile_url}")
+        driver.get(url)
         
-        # 2. 等待元素加载
-        WebDriverWait(driver, 10).until(
+        # 保存HTML源码用于调试
+        save_artifact(driver.page_source, "gs_page.html")
+        logger.info("页面HTML已保存")
+        
+        # 等待页面加载
+        WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.ID, "gsc_rsb_cit"))
         )
+        logger.info("页面元素加载完成")
         
-        # 3. 尝试解析引文数字
-        try:
-            citations_element = driver.find_element(By.ID, "gsc_rsb_cit")
-            citations_text = citations_element.text.replace('Cited by', '').replace(',', '').strip()
-            if citations_text.isdigit():
-                print(f"成功解析引文数: {citations_text}")
-                return int(citations_text)
-        except:
-            pass
+        # 保存加载后的HTML
+        save_artifact(driver.page_source, "gs_page_after_wait.html")
         
-        # 4. 使用视觉方式作为备份
-        try:
-            citation_container = driver.find_element(By.CSS_SELECTOR, "#gsc_rsb_cit")
-            screenshot_path = capture_element_screenshot(driver, citation_container, "citations_screenshot.png")
-            citations = ocr_extract_text_from_image(screenshot_path)
-            print(f"视觉解析引文数: {citations}")
-        except Exception as e:
-            print(f"视觉解析失败: {e}")
+        # 尝试提取引文数量
+        citations_element = driver.find_element(By.ID, "gsc_rsb_cit")
+        text = citations_element.text
         
-        return citations
-    
+        # 保存元素文本用于调试
+        element_text = f"Element Text: {text}"
+        save_artifact(element_text, "citation_element_text.txt")
+        
+        # 尝试解析数字
+        if "Cited by" in text:
+            cit_text = text.replace("Cited by", "").replace(',', '').strip()
+            if cit_text.isdigit():
+                citations = int(cit_text)
+                logger.info(f"成功解析引文数: {citations}")
+                return citations
+        
+        # 尝试其他选择器
+        for selector in ["#gsc_rsb_cit", ".gsc_rsb_std"]:
+            try:
+                alt_element = driver.find_element(By.CSS_SELECTOR, selector)
+                alt_text = alt_element.text
+                numbers = ''.join(filter(str.isdigit, alt_text))
+                if numbers:
+                    citations = int(numbers)
+                    logger.info(f"备选解析成功: {citations} (by {selector})")
+                    return citations
+            except:
+                pass
+        
+        # 使用视觉识别作为最后手段
+        logger.warning("文本解析失败，尝试视觉识别...")
+        return capture_debug_screenshots(driver, "debug")
+        
     except Exception as e:
-        print(f"Selenium解析异常: {e}")
-        return citations
-    finally:
-        driver.quit()
+        logger.error(f"获取引文数时出错: {str(e)}")
+        return capture_debug_screenshots(driver, "error")
 
 def update_about_md(citation_count):
     """更新About.md文件"""
     try:
-        # 读取现有的About.md文件
-        with open('About.md', 'r', encoding='utf-8') as file:
-            content = file.read()
+        about_path = 'About.md'
+        logger.info(f"更新 {about_path} 文件")
         
-        # 替换引文数占位符
+        with open(about_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 查找并替换占位符
         new_content = re.sub(
-            r'<span id=\'total_cit\'>\[loading\]</span>',
-            f'<span id=\'total_cit\'>{citation_count}</span>',
+            r"<span id='total_cit'>\[loading\]</span>",
+            f"<span id='total_cit'>{citation_count}</span>",
             content
         )
         
-        # 保存更新后的文件
-        with open('About.md', 'w', encoding='utf-8') as file:
-            file.write(new_content)
+        # 如果没找到带方括号的占位符，尝试更智能的替换
+        if new_content == content:
+            logger.warning("未找到 [loading] 占位符，尝试其他替换方式")
+            new_content = re.sub(
+                r'<span id=\'total_cit\'>.*?</span>',
+                f'<span id=\'total_cit\'>{citation_count}</span>',
+                content
+            )
         
-        print("About.md文件更新成功")
+        # 保存更新
+        with open(about_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        
+        logger.info(f"{about_path} 更新成功")
         return True
-    
+        
     except Exception as e:
-        print(f"更新About.md失败: {e}")
+        logger.error(f"更新About.md失败: {str(e)}")
         return False
-
-def create_shieldio_endpoint(citations):
-    """创建Shields.io端点所需的JSON文件"""
-    shieldio_data = {
-        "schemaVersion": 1,
-        "label": "citations",
-        "message": str(citations),
-        "color": "blue",
-        "namedLogo": "google-scholar",
-        "logoColor": "4285F4",
-        "style": "flat"
-    }
-    
-    os.makedirs('results', exist_ok=True)
-    with open('results/gs_data_shieldsio.json', 'w') as f:
-        json.dump(shieldio_data, f)
-    
-    # 返回Shields.io端点URL
-    return "https://github.citation.shields.endpoint/results/gs_data_shieldsio.json"
 
 def main():
     try:
         scholar_id = os.environ['GOOGLE_SCHOLAR_ID']
-        print(f"=== 开始处理Google Scholar数据，ID: {scholar_id} ===")
+        logger.info(f"===== 开始处理Google Scholar数据 =====")
+        logger.info(f"学术ID: {scholar_id}")
+        logger.info(f"当前时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
-        # 尝试使用Selenium解析引文数
-        citations = parse_citations_from_html_selenium(scholar_id)
-        print(f"最终引文数: {citations}")
+        driver = setup_browser()
         
-        # 准备完整的数据结构
-        scholar_data = {
-            "name": f"Google Scholar: {scholar_id}",
-            "citedby": citations,
-            "profile_url": f"https://scholar.google.com/citations?user={scholar_id}",
-            "updated": datetime.now().isoformat()
-        }
-        
-        # 保存完整数据
-        with open('results/gs_data.json', 'w') as f:
-            json.dump(scholar_data, f, indent=2, ensure_ascii=False)
-        print("数据文件保存完成")
-        
-        # 创建Shields.io端点
-        endpoint_url = create_shieldio_endpoint(citations)
-        print(f"Shields.io端点已创建: {endpoint_url}")
-        
-        # 更新About.md文件
-        if update_about_md(citations):
-            print("About.md成功更新")
-        else:
-            print("About.md更新失败，将继续使用旧值")
+        try:
+            # 获取引文数
+            citations = get_citations(driver, scholar_id)
             
-    except KeyError:
-        print("错误：未找到GOOGLE_SCHOLAR_ID环境变量")
-        return
-    
+            # 保存结果数据
+            result_data = {
+                "scholar_id": scholar_id,
+                "citation_count": citations,
+                "retrieved_at": datetime.now().isoformat(),
+                "source": "google_scholar"
+            }
+            save_artifact(result_data, "scholar_results.json")
+            logger.info(f"最终引文数: {citations}")
+            
+            # 更新About.md
+            update_about_md(citations)
+            
+            # 创建徽章数据
+            shield_data = {
+                "schemaVersion": 1,
+                "label": "citations",
+                "message": str(citations),
+                "color": "blue",
+                "namedLogo": "google-scholar",
+                "logoColor": "#4285F4",
+                "style": "flat"
+            }
+            save_artifact(shield_data, "gs_data_shieldsio.json")
+            logger.info("徽章数据已保存")
+            
+        finally:
+            driver.quit()
+            logger.info("浏览器已关闭")
+            
+        logger.info("===== 处理完成 =====")
+        logger.info(f"下次更新应在24小时内自动运行")
+        
     except Exception as e:
-        print(f"主函数异常: {e}")
-    
-    print("=== 处理完成 ===")
+        logger.exception(f"严重错误: {str(e)}")
+        # 保存错误状态
+        error_data = {
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+        save_artifact(error_data, "last_error.json")
 
 if __name__ == "__main__":
     main()
