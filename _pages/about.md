@@ -19,7 +19,7 @@ redirect_from:
 
 # 👨‍🏫 About Me 
 
-**Xiao-Kang Liu** is an Associate Professor with the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received B.S. in Automation and Ph.D. in Control Science and Engineering from HUST by 2014 and 2019. His research focuses on collaborative control theory and applications, including hybrid cooperative control of multi-agent systems and cooperative control and optimization of microgrid systems. He has led research projects funded by the National Natural Science Foundation of China (General and Youth Projects), the Natural Science Foundation of Hubei Province, and educational reform programs of the Ministry of Education. He was selected into the Wuhan Young Talent Program and the China Association for Science and Technology Youth Talent Support Project.
+**Xiao-Kang Liu** is an Associate Professor at the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received his B.ENg. in Automation (2014) and his Ph.D. in Control Science and Engineering (2019), both from HUST. His research focuses on collaborative control theory and applications, including the hybrid cooperative control of multi-agent systems and cooperative control/optimization of microgrid systems. He has led research projects funded by the National Natural Science Foundation of China (General and Youth Programs), the Natural Science Foundation of Hubei Province, and Ministry of Education educational reform programs. Dr. Liu was selected for the Wuhan Young Talents Program and the China Association for Science and Technology Youth Talent Support Project.
 
 ---
 
@@ -246,14 +246,6 @@ redirect_from:
 73. Ngoc-Tu Tran, **Xiao-Kang Liu**, Yan-Wu Wang*, "Distributed optimization problem for second-order multi-agent networks with only position interaction", PROCEEDINGS OF THE 35TH CHINESE CONTROL CONFERENCE 2016, 2016: 2746-2750. [10.1109/ChiCC.2016.7553779](https://doi.org/10.1109/ChiCC.2016.7553779)
 
 74. Meng Liu, Yan-Wu Wang*, Jiang-Wen Xiao, **Xiao-Kang Liu**, "Formation tracking control for multi-agent systems with nonlinear dynamics via impulsive control", 26TH CHINESE CONTROL AND DECISION CONFERENCE (2014 CCDC), 2014: 3669-3674. [10.1109/CCDC.2014.6852817](https://doi.org/10.1109/CCDC.2014.6852817)
-
-
----
-
-<span class='anchor' id='recruitment'></span>
-# 👥 Recruitment
-
-In response to China’s “Dual Carbon” strategy, our group focuses on big data analysis, cooperative control, optimized operation, and resilient recovery in new-type power systems. We welcome master's and Ph.D. students to join us!
 
 ---
 
