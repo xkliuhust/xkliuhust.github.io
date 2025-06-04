@@ -13,7 +13,7 @@ main:
     url: "/#interests"
   - title: "Publications"
     url: "/#publications"   # 假如你的论文列表页面位于 /publications/ 目录下
-  - title: "Recruitment"
-    url: "/#recruitment"
+  # - title: "Recruitment"
+  #   url: "/#recruitment"
   - title: "Contact"
     url: "/#contact"
