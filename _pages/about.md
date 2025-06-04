@@ -19,9 +19,7 @@ redirect_from:
 
 # 👨‍🏫 About Me 
 
-**Xiaokang Liu** is an Associate Professor and Master's supervisor at the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received his Ph.D. in Control Science and Engineering from HUST in 2019. His research focuses on collaborative control theory and applications, including hybrid cooperative control of multi-agent systems and cooperative control and optimization of microgrid systems.
-
-He has published over 30 papers in *Automatica* and IEEE Transactions journals, authorized 10 national invention patents, and has four papers selected as ESI Highly Cited Papers. He has led research projects funded by the National Natural Science Foundation of China (General and Youth Projects), the Natural Science Foundation of Hubei Province, and educational reform programs of the Ministry of Education. He was selected into the Wuhan Young Talent Program and the China Association for Science and Technology Youth Talent Support Project.
+**Xiao-Kang Liu** is an Associate Professor with the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received B.S. in Automation and Ph.D. in Control Science and Engineering from HUST by 2014 and 2019. His research focuses on collaborative control theory and applications, including hybrid cooperative control of multi-agent systems and cooperative control and optimization of microgrid systems. He has led research projects funded by the National Natural Science Foundation of China (General and Youth Projects), the Natural Science Foundation of Hubei Province, and educational reform programs of the Ministry of Education. He was selected into the Wuhan Young Talent Program and the China Association for Science and Technology Youth Talent Support Project.
 
 ---
 
