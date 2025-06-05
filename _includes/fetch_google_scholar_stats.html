@@ -1,19 +1,87 @@
 <script>
-    $(document).ready(function () {
-        {% if site.google_scholar_stats_use_cdn %}
-        var gsDataBaseUrl = 'https://cdn.jsdelivr.net/gh/{{ site.repository }}@'
-        {% else %}
-        var gsDataBaseUrl = 'https://raw.githubusercontent.com/{{ site.repository }}/'
-        {% endif %}
-        $.getJSON(gsDataBaseUrl + "google-scholar-stats/gs_data.json", function (data) {
-            var totalCitation = data['citedby']
-            document.getElementById('total_cit').innerHTML = totalCitation;
-            var citationEles = document.getElementsByClassName('show_paper_citations')
-            Array.prototype.forEach.call(citationEles, element => {
-                var paperId = element.getAttribute('data')
-                var numCitations = data['publications'][paperId]['num_citations']
-                element.innerHTML = '| Citations: ' + numCitations;
-            });
+(function() {
+  // 使用DOM加载完成事件替代jQuery.ready
+  document.addEventListener('DOMContentLoaded', function() {
+    // 动态构建基本URL - 确保处理Jekyll变量
+    var gsDataBaseUrl;
+    try {
+      {% if site.google_scholar_stats_use_cdn %}
+        gsDataBaseUrl = 'https://cdn.jsdelivr.net/gh/{{ site.repository }}@';
+      {% else %}
+        gsDataBaseUrl = 'https://raw.githubusercontent.com/{{ site.repository }}/';
+      {% endif %}
+      
+      // 添加调试输出（可在控制台查看）
+      console.debug('GS Data URL:', gsDataBaseUrl + "google-scholar-stats/gs_data.json");
+    } catch (e) {
+      console.error("Error setting base URL:", e);
+      gsDataBaseUrl = '';
+    }
+
+    // 函数：安全更新元素内容
+    function safeSetContent(selector, content) {
+      var element = document.getElementById(selector);
+      if (element) {
+        element.textContent = content;
+      } else {
+        // 添加重试机制
+        setTimeout(function() {
+          safeSetContent(selector, content);
+        }, 500);
+      }
+    }
+
+    // 使用Fetch API替代$.getJSON （避免jQuery依赖）
+    fetch(gsDataBaseUrl + "google-scholar-stats/gs_data.json")
+      .then(response => {
+        // 检查HTTP响应状态
+        if (!response.ok) {
+          throw new Error('Network response was not ok: ' + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 添加深入检查
+        if (!data || data.citedby === undefined) {
+          throw new Error('Invalid JSON structure in gs_data.json');
+        }
+        
+        // 安全更新总引次数
+        safeSetContent('total_cit', data.citedby);
+        
+        // 更新论文引次数
+        var citationEles = document.getElementsByClassName('show_paper_citations');
+        Array.prototype.forEach.call(citationEles, element => {
+          var paperId = element.getAttribute('data');
+          
+          // 添加空值检查
+          var numCitations = data.publications?.[paperId]?.num_citations ?? 'N/A';
+          
+          // 仅更新内容（保留原有HTML结构）
+          if (element.firstChild) {
+            element.firstChild.textContent = '| Citations: ' + numCitations;
+          } else {
+            element.textContent = '| Citations: ' + numCitations;
+          }
         });
-    })
+      })
+      .catch(error => {
+        // 详细错误处理
+        console.error('加载引用数据失败:', error);
+        safeSetContent('total_cit', '加载中...');
+        document.querySelectorAll('.show_paper_citations').forEach(el => {
+          if (el.firstChild) {
+            el.firstChild.textContent = '| 数据加载失败';
+          } else {
+            el.textContent = '| 数据加载失败';
+          }
+        });
+        
+        // 添加错误恢复机制（5秒后重试）
+        setTimeout(function() {
+          location.reload();
+        }, 5000);
+      });
+  });
+})();
 </script>
