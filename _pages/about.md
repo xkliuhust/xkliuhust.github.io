@@ -98,7 +98,14 @@ redirect_from:
 
 <span class='anchor' id='publications'></span>
 # 📝 Publications
-<div style="text-align: justify;">
+<style>
+  p {
+      text-align: justify;
+      -moz-text-align-last: justify;    /* Firefox */
+      -webkit-text-align-last: justify; /* Safari/Chrome */
+      text-align-last: justify;
+  }
+</style>
 1. Meng-Ru Kong, Yan-Wu Wang, Ze-Hong Zeng, **Xiao-Kang Liu***, "Adaptive Tracking Control of Switched Stochastic Non-Linear Systems With Full State Constraints: A MDADT Switching Method", INTERNATIONAL JOURNAL OF ROBUST AND NONLINEAR CONTROL, 2025. [10.1002/rnc.7880](https://doi.org/10.1002/rnc.7880)
 
 2. Ze-Hong Zeng, Yan-Wu Wang, **Xiao-Kang Liu***, Zhi-Wei Liu, "Backstepping-Based Composite Prescribed-Time Control for Two-Time-Scale Systems", INTERNATIONAL JOURNAL OF ROBUST AND NONLINEAR CONTROL, 2025. [10.1002/rnc.7827](https://doi.org/10.1002/rnc.7827)
@@ -246,7 +253,7 @@ redirect_from:
 73. Ngoc-Tu Tran, **Xiao-Kang Liu**, Yan-Wu Wang*, "Distributed optimization problem for second-order multi-agent networks with only position interaction", PROCEEDINGS OF THE 35TH CHINESE CONTROL CONFERENCE 2016, 2016: 2746-2750. [10.1109/ChiCC.2016.7553779](https://doi.org/10.1109/ChiCC.2016.7553779)
 
 74. Meng Liu, Yan-Wu Wang*, Jiang-Wen Xiao, **Xiao-Kang Liu**, "Formation tracking control for multi-agent systems with nonlinear dynamics via impulsive control", 26TH CHINESE CONTROL AND DECISION CONFERENCE (2014 CCDC), 2014: 3669-3674. [10.1109/CCDC.2014.6852817](https://doi.org/10.1109/CCDC.2014.6852817)
-<div>
+
 ---
 
 <span class='anchor' id='contact'></span>
