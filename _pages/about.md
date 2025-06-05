@@ -247,7 +247,7 @@ redirect_from:
 
 74. Meng Liu, Yan-Wu Wang*, Jiang-Wen Xiao, **Xiao-Kang Liu**, "Formation tracking control for multi-agent systems with nonlinear dynamics via impulsive control", 26TH CHINESE CONTROL AND DECISION CONFERENCE (2014 CCDC), 2014: 3669-3674. [10.1109/CCDC.2014.6852817](https://doi.org/10.1109/CCDC.2014.6852817)
 
-
+75.
 ---
 
 <span class='anchor' id='contact'></span>
