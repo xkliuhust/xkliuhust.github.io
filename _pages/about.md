@@ -15,6 +15,15 @@ redirect_from:
 {% endif %}
 {% assign url = gsDataBaseUrl | append: "google-scholar-stats/gs_data_shieldsio.json" %}
 
+<style>
+  p {
+      text-align: justify;
+      -moz-text-align-last: justify;    /* Firefox */
+      -webkit-text-align-last: justify; /* Safari/Chrome */
+      text-align-last: justify;
+  }
+</style>
+
 <span class='anchor' id='about-me'></span>
 
 # 👨‍🏫 About Me 
@@ -98,14 +107,7 @@ redirect_from:
 
 <span class='anchor' id='publications'></span>
 # 📝 Publications
-<style>
-  p {
-      text-align: justify;
-      -moz-text-align-last: justify;    /* Firefox */
-      -webkit-text-align-last: justify; /* Safari/Chrome */
-      text-align-last: justify;
-  }
-</style>
+
 1. Meng-Ru Kong, Yan-Wu Wang, Ze-Hong Zeng, **Xiao-Kang Liu***, "Adaptive Tracking Control of Switched Stochastic Non-Linear Systems With Full State Constraints: A MDADT Switching Method", INTERNATIONAL JOURNAL OF ROBUST AND NONLINEAR CONTROL, 2025. [10.1002/rnc.7880](https://doi.org/10.1002/rnc.7880)
 
 2. Ze-Hong Zeng, Yan-Wu Wang, **Xiao-Kang Liu***, Zhi-Wei Liu, "Backstepping-Based Composite Prescribed-Time Control for Two-Time-Scale Systems", INTERNATIONAL JOURNAL OF ROBUST AND NONLINEAR CONTROL, 2025. [10.1002/rnc.7827](https://doi.org/10.1002/rnc.7827)
