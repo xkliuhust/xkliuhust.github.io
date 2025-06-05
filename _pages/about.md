@@ -18,7 +18,7 @@ redirect_from:
 <span class='anchor' id='about-me'></span>
 
 # 👨‍🏫 About Me 
-
+<div style="text-align: justify;">
 **Xiao-Kang Liu** is an Associate Professor at the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received his B.ENg. in Automation (2014) and his Ph.D. in Control Science and Engineering (2019), both from HUST. His research focuses on collaborative control theory and applications, including the hybrid cooperative control of multi-agent systems and cooperative control/optimization of microgrid systems. He has led research projects funded by the National Natural Science Foundation of China (General and Youth Programs), the Natural Science Foundation of Hubei Province, and Ministry of Education educational reform programs. Dr. Liu was selected for the Wuhan Young Talents Program and the China Association for Science and Technology Youth Talent Support Project.
 
 ---
@@ -247,7 +247,6 @@ redirect_from:
 
 74. Meng Liu, Yan-Wu Wang*, Jiang-Wen Xiao, **Xiao-Kang Liu**, "Formation tracking control for multi-agent systems with nonlinear dynamics via impulsive control", 26TH CHINESE CONTROL AND DECISION CONFERENCE (2014 CCDC), 2014: 3669-3674. [10.1109/CCDC.2014.6852817](https://doi.org/10.1109/CCDC.2014.6852817)
 
-75.
 ---
 
 <span class='anchor' id='contact'></span>
