@@ -1,31 +1,54 @@
-name: Get Citation Data
+name: Update Scholar Data
 
 on:
   schedule:
-    - cron: '0 8 * * *'     # 每天 UTC 08:00
-  push:
-    branches: [main]        # 当 main 分支更新时也触发
-  workflow_dispatch:        # 手动触发
+    - cron: '0 5 * * *'  # 每天 UTC 5:00 运行（约北京/香港时间下午1点）
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
-  build:
+  update-scholar-data:
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_SCHOLAR_ID: ${{ secrets.SCHOLAR_ID }}  # 需要在仓库设置中添加
+    
     steps:
-    - uses: actions/checkout@v2
-    - name: Install Reqs
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Tor service
       run: |
-        sudo apt-get install python3-setuptools
-    - name: Run
+        sudo apt-get update
+        sudo apt-get install -y tor
+        
+        # 配置非默认端口
+        echo "SocksPort 0.0.0.0:9050" | sudo tee -a /etc/tor/torrc
+        sudo service tor restart
+        sleep 5
+        
+        # 验证 Tor 是否运行
+        curl --socks5 localhost:9050 --socks5-hostname localhost:9050 -s https://check.torproject.org/ | cat | grep -m 1 Congratulations
+
+    - name: Install dependencies
       run: |
-        cd ./google_scholar_crawler
-        pip3 install -r requirements.txt
-        python3 main.py
-        cd ./results
-        git init
-        git config --local user.name "${GITHUB_ACTOR}"
-        export remote_repo="https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
-        git add *.json
-        git commit -m "Updated Citation Data"
-        git push "${remote_repo}" HEAD:google-scholar-stats --force
-      env: 
-        GOOGLE_SCHOLAR_ID: ${{ secrets.GOOGLE_SCHOLAR_ID }}
+        pip install scholarly requests beautifulsoup4
+
+    - name: Run scholar scraper
+      run: |
+        echo "GITHUB_SHA=$GITHUB_SHA"
+        time python scholar_scraper.py
+      env:
+        USE_TOR_PROXY: "true"  # 使用Tor代理
+        # USE_TOR_PROXY: "false"  # 使用免费代理
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "actions@github.com"
+        git config --local user.name "GitHub Actions"
+        git add results
+        git commit -m "自动更新学术数据 - $(date '+%Y-%m-%d %H:%M:%S') UTC"
+        git push
