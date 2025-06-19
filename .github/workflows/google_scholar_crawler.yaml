@@ -1,48 +1,62 @@
-name: Update Scholar Metrics
+name: Auto-Update Scholar Metrics
 
 on:
   schedule:
-    # 每天运行两次：北京时间 12:00 和 0:00
-    - cron: '0 4 * * *'   # UTC 4:00 (北京时间 12:00)
-    - cron: '0 16 * * *'  # UTC 16:00 (北京时间 0:00)
+    # 每天北京时间 4:00 和 16:00 运行
+    - cron: "0 20 * * *"  # UTC 20:00 = 北京时间 4:00
+    - cron: "0 8 * * *"   # UTC 8:00 = 北京时间 16:00
   workflow_dispatch:      # 允许手动触发
 
 jobs:
-  update-metrics:
+  update-scholar:
     runs-on: ubuntu-latest
-    timeout-minutes: 5  # 防止任务卡住
+    timeout-minutes: 5
     
     env:
-      SCHOLAR_ID: ${{ secrets.SCHOLAR_ID }}  # 在仓库设置中添加
+      # 从GitHub Secrets读取Scholar ID
+      GOOGLE_SCHOLAR_ID: ${{ secrets.SCHOLAR_ID }}
     
     steps:
-    - name: Checkout repository
+    - name: 检出代码
       uses: actions/checkout@v4
     
-    - name: Set up Python
+    - name: 设置 Python 环境
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: "3.10"
+        cache: "pip"
     
-    - name: Install dependencies
-      run: pip install requests beautifulsoup4
-    
-    - name: Run Scholar Scraper
+    - name: 安装依赖
       run: |
-        if [ -n "$SCHOLAR_ID" ]; then
-          python scholar_scraper.py
-        else
-          echo "WARNING: SCHOLAR_ID not set, using default ID"
-          python scholar_scraper.py
-        fi
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4
+    
+    - name: 运行 Scholar 爬虫
+      run: python scholar_scraper.py
       env:
-        SCHOLAR_ID: ${{ secrets.SCHOLAR_ID }}
+        # 如果SECRET未设置，使用默认学者ID
+        GOOGLE_SCHOLAR_ID: ${{ secrets.SCHOLAR_ID || 'B7vSqZsAAAAJ' }}
     
-    - name: Commit and push changes
-      if: always()  # 无论任务是否成功都提交，保留错误信息
+    - name: 提交更新结果
+      id: commit
+      continue-on-error: true  # 即使爬虫失败也提交结果
       run: |
-        git config --local user.email "scholar-updater@github.com"
-        git config --local user.name "Scholar Metrics Updater"
-        git add results
-        git diff-index --quiet HEAD || git commit -m "更新学术数据 [skip ci]"
-        git push
+        git config user.email "actions@github.com"
+        git config user.name "Scholar Data Updater"
+        
+        # 仅当结果文件有变化时提交
+        if git diff --exit-code --quiet -- results; then
+          echo "无数据变更"
+        else
+          git add results
+          git commit -m "自动更新学术数据 [skip ci]"
+          git push
+          echo "提交成功!"
+        fi
+    
+    - name: 保存日志文件
+      if: always()  # 无论任务成功与否都保存日志
+      uses: actions/upload-artifact@v3
+      with:
+        name: scholar-crawler-logs
+        path: scholar_crawler.log
