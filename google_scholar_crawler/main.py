@@ -1,16 +1,12 @@
-from scholarly import scholarly, ProxyGenerator
 import json
 from datetime import datetime
 import os
 import time
 import random
 import logging
-import urllib3
 import requests
 from bs4 import BeautifulSoup
-
-# 禁用不必要的警告
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import re
 
 # 配置日志
 logging.basicConfig(
@@ -19,222 +15,216 @@ logging.basicConfig(
 )
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/126.0"
 ]
 
-def setup_proxy():
-    """配置代理，使用 Tor 或免费代理"""
-    pg = ProxyGenerator()
-    
-    if os.environ.get("USE_TOR_PROXY", "false").lower() == "true":
-        # 使用 Tor 代理（GitHub Actions 中需配置 Tor 服务）
-        pg.Tor_Internal(proxy_port=9050)
-        logging.info("使用 Tor 代理")
-    else:
-        # 使用免费代理（备选方案）
-        pg.FreeProxies()
-        logging.info("使用免费代理")
-    
-    try:
-        scholarly.use_proxy(pg)
-        logging.info("代理设置成功")
-        return True
-    except Exception as e:
-        logging.error(f"代理设置失败: {e}")
-        return False
-
-def fetch_author_data():
-    """获取学者数据（具有更好的错误处理和重试机制）"""
-    scholar_id = os.environ.get('GOOGLE_SCHOLAR_ID')
-    if not scholar_id:
-        logging.error("环境变量 GOOGLE_ SCHOLAR_ID 未设置")
-        raise ValueError("Google Scholar ID 未配置")
-    
-    max_retries = 5
-    backoff_factor = 2
-    
-    current_settings = scholarly.settings
-    logging.info(f"当前scholarly设置: {current_settings}")
-    
-    # 设置全局请求配置
-    scholarly.set_retries(3)
-    scholarly.set_timeout(30)
-    
-    for attempt in range(1, max_retries + 1):
-        try:
-            # 设置随机 User-Agent
-            scholarly.headers.update({"User-Agent": random.choice(USER_AGENTS)})
-            
-            # 添加随机延迟，防止被屏蔽
-            delay = random.uniform(1, 3) + (attempt - 1) * backoff_factor
-            logging.info(f"尝试 #{attempt} - 等待 {delay:.1f}秒...")
-            time.sleep(delay)
-            
-            # 获取作者数据
-            logging.info(f"获取作者数据 ID: {scholar_id}")
-            author = scholarly.search_author_id(scholar_id)
-            
-            # 定义并随机化要填充的部分
-            sections = ['basics', 'indices', 'counts', 'publications']
-            random.shuffle(sections)
-            
-            # 仅填充必要的基础信息（提高成功率）
-            scholarly.fill(author, sections=['basics', 'indices', 'counts'])
-            
-            # 单独处理出版物（最容易失败的部分）
-            try:
-                logging.info("尝试获取出版物列表...")
-                scholarly.fill(author, sections=['publications'])
-            except Exception as pub_error:
-                logging.error(f"获取出版物失败: {pub_error}")
-            
-            logging.info("数据获取成功!")
-            return author
-        except requests.exceptions.RequestException as e:
-            logging.error(f"网络请求错误 (尝试 {attempt}/{max_retries}): {str(e)}")
-            time.sleep(attempt * 5)  # 递增的等待时间
-        except Exception as e:
-            logging.error(f"处理过程中出错 (尝试 {attempt}/{max_retries}): {str(e)}")
-            time.sleep(attempt * 3)  # 递增的等待时间
-    
-    logging.error(f"所有 {max_retries} 次尝试均失败")
-    return None
-
-def manual_fallback(scholar_id):
-    """当 scholarly 失败时的备选方案：抓取公开页面"""
-    try:
-        url = f"https://scholar.google.com/citations?user={scholar_id}"
-        headers = {'User-Agent': random.choice(USER_AGENTS)}
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # 解析关键指标
-        citedby = soup.select_one("#gsc_rsb_st tbody tr:nth-child(1) td:nth-child(2)").text
-        citedby = int(''.join(filter(str.isdigit, citedby))) if citedby else 0
-        
-        # 解析 h-index
-        hindex = soup.select_one("#gsc_rsb_st tbody tr:nth-child(2) td:nth-child(2)").text
-        hindex = int(''.join(filter(str.isdigit, hindex))) if hindex else 0
-        
-        # 创建简化数据
-        return {
-            "name": "数据获取失败，使用公开API",
-            "citedby": citedby,
-            "hindex": hindex,
-            "publications": [],
-            "updated": str(datetime.now()),
-            "source": "manual_fallback"
-        }
-    except Exception as e:
-        logging.error(f"备选方案也失败: {str(e)}")
-        return {
-            "name": "错误：所有尝试失败",
-            "citedby": 0,
-            "hindex": 0,
-            "publications": [],
-            "updated": str(datetime.now()),
-            "source": "fallback"
-        }
-
-def process_data(author_data):
-    """处理并精简数据以适应GitHub限制"""
-    # 获取基本指标
-    citedby = author_data.get('citedby', 0)
-    hindex = author_data.get('hindex', 0)
-    
-    # 处理publications字段（避免超出GitHub文件大小限制）
-    publications = author_data.get('publications', [])
-    if publications:
-        # 筛选必要字段，减少大小
-        cleaned_pubs = []
-        for pub in publications:
-            # 避免处理None值的异常
-            if not isinstance(pub, dict):
-                continue
-                
-            cleaned = {
-                "title": pub.get('bib', {}).get('title', ''),
-                "year": pub.get('bib', {}).get('pub_year', ''),
-                "citation": pub.get("num_citations", 0)
-            }
-            cleaned_pubs.append(cleaned)
-    else:
-        cleaned_pubs = []
-    
-    # 创建精简的数据结构
-    processed = {
-        "name": author_data.get("name", "Unknown"),
-        "affiliation": author_data.get("affiliation", ""),
-        "citedby": citedby,
-        "hindex": hindex,
-        "total_publications": len(cleaned_pubs),
-        "publications_sample": cleaned_pubs[:3],  # 仅保存少量样例
-        "updated": author_data.get("updated", str(datetime.now())),
-        "source": author_data.get("source", "scholarly")
+def safe_request(url, max_retries=5, timeout=30):
+    """带有重试机制和安全异常处理的自定义请求函数"""
+    headers = {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Referer": "https://scholar.google.com/",
+        "DNT": "1"
     }
     
-    return processed
+    backoff_times = [1, 2, 3, 5, 8]  # 退避时间（秒）
+    
+    for attempt in range(max_retries):
+        try:
+            # 在请求之间添加随机延迟
+            if attempt > 0:
+                delay = backoff_times[attempt-1] + random.random() * 1.5
+                logging.info(f"重试 #{attempt+1}/{max_retries} - 等待 {delay:.1f}秒...")
+                time.sleep(delay)
+            
+            response = requests.get(
+                url, 
+                headers=headers, 
+                timeout=timeout,
+                allow_redirects=True
+            )
+            
+            # 检查是否在CAPTCHA页面上
+            if "sorry" in response.url or "captcha" in response.text.lower():
+                raise Exception(f"被重定向到CAPTCHA页面: {response.url}")
+            
+            if 200 <= response.status_code < 300:
+                return response
+            
+            # 处理403禁止访问的情况
+            if response.status_code == 403:
+                raise Exception(f"服务器拒绝访问 (403 Forbidden)")
+            
+            # 处理429过快访问
+            if response.status_code == 429:
+                raise Exception(f"请求过多 (429 Too Many Requests)")
+                
+            response.raise_for_status()
+            
+        except Exception as e:
+            last_error = str(e)
+            logging.error(f"{url} 请求失败 (尝试 {attempt+1}/{max_retries}): {last_error}")
+            
+            # 如果是最后一次尝试，则重新抛出异常
+            if attempt == max_retries - 1:
+                raise
+    
+    return None  # 不应该到达这里
+
+def parse_scholar_profile(html_content):
+    """解析Google Scholar个人页面HTML内容"""
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # 提取学者名称
+    name_element = soup.find('div', id='gsc_prf_in')
+    name = name_element.text.strip() if name_element else "未知学者"
+    
+    # 提取引用信息
+    citations_element = soup.find('td', class_='gsc_rsb_std', string=re.compile(r'被引用次数'))
+    citations = int(citations_element.text.strip()) if citations_element else 0
+    
+    # 提取h-index
+    hindex_element = soup.select_one('td.gsc_rsb_std:nth-child(2)')
+    if hindex_element:
+        hindex = int(hindex_element.text.strip())
+    else:
+        # 尝试替代查找方式
+        hindex_row = soup.find('td', class_='gsc_rsb_sc1', string='h指数')
+        hindex = int(hindex_row.find_next_sibling('td').text.strip()) if hindex_row else 0
+    
+    # 提取i10-index
+    i10_row = soup.find('td', class_='gsc_rsb_sc1', string='i10指数')
+    i10index = int(i10_row.find_next_sibling('td').text.strip()) if i10_row else 0
+    
+    # 提取最后更新的时间
+    updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 创建结构化数据
+    profile_data = {
+        "name": name,
+        "citedby": citations,
+        "hindex": hindex,
+        "i10index": i10index,
+        "updated": updated,
+        "source": "HTML直接抓取"
+    }
+    
+    return profile_data
+
+def simulate_scholar_api(scholar_id):
+    """模拟API调用来获取数据（不使用scholarly库）"""
+    # 获取公共信息的基础URL
+    base_url = f"https://scholar.google.com/citations?user={scholar_id}&hl=en"
+    
+    logging.info(f"抓取Google Scholar页面: {base_url}")
+    response = safe_request(base_url)
+    
+    # 检查是否有有效响应
+    if not response:
+        return {"error": "所有请求尝试均失败"}
+    
+    profile_data = parse_scholar_profile(response.text)
+    
+    # 添加Scholar ID
+    profile_data["scholar_id"] = scholar_id
+    
+    return profile_data
+
+def save_results(data, target_dir="results"):
+    """保存抓取结果到文件"""
+    os.makedirs(target_dir, exist_ok=True)
+    
+    # 1. 保存完整JSON数据
+    with open(f'{target_dir}/gs_data.json', 'w') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    
+    # 2. 保存Shields.io徽章数据
+    shield_data = {
+        "schemaVersion": 1,
+        "label": "学术引用",
+        "message": f"{data.get('citedby', 0)}",
+        "color": "brightgreen",
+        "logoSvg": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+    <path d="M20.5 6.1c1.4 0 2.5 1.1 2.5 2.5v7c0 1.4-1.1 2.5-2.5 2.5h-17c-1.4 0-2.5-1.1-2.5-2.5v-7c0-1.4 1.1-2.5 2.5-2.5h17zm0 1h-17c-.8 0-1.5.7-1.5 1.5v7c0 .8.7 1.5 1.5 1.5h17c.8 0 1.5-.7 1.5-1.5v-7c0-.8-.7-1.5-1.5-1.5zm-8.5 8c.4 0 .8.3.8.7s-.4.7-.8.7h-7c-.4 0-.7-.3-.7-.7s.3-.7.7-.7h7zm7-5c.4 0 .7.3.7.7s-.3.7-.7.7h-14c-.4 0-.7-.3-.7-.7s.3-.7.7-.7h14z"/>
+    </svg>"""
+    }
+    
+    with open(f'{target_dir}/gs_data_shieldsio.json', 'w') as f:
+        json.dump(shield_data, f, ensure_ascii=False)
+    
+    # 3. 保存人类可读摘要
+    summary = f"""Google Scholar 数据更新
+
+学者ID: {data.get('scholar_id', '未提供')}
+姓名: {data.get('name', '未知')}
+被引次数: {data.get('citedby', 0)}
+h-index: {data.get('hindex', 0)}
+i10-index: {data.get('i10index', 0)}
+更新时间: {data.get('updated', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
+数据来源: {data.get('source', '直接抓取')}
+
+--- 自动生成于 Google Scholar 数据抓取器 ---"""
+    
+    with open(f'{target_dir}/summary.txt', 'w') as f:
+        f.write(summary)
+    
+    # 4. 保存原始HTML（用于调试）
+    if 'html' in data:
+        with open(f'{target_dir}/raw_page.html', 'w', encoding='utf-8') as f:
+            f.write(data['html'])
+    
+    return True
 
 # ===================== 主执行流程 =====================
 if __name__ == "__main__":
-    logging.info("=" * 60)
-    logging.info("开始 Google Scholar 数据抓取工作流")
-    logging.info("=" * 60)
+    # 初始化日志
+    logging.info("=" * 50)
+    logging.info("Google Scholar 数据抓取器启动")
+    logging.info(f"执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # 1. 设置代理
-    setup_proxy()
-    
-    # 2. 获取学者数据
+    # 获取Scholar ID
     scholar_id = os.environ.get('GOOGLE_SCHOLAR_ID')
-    author_data = fetch_author_data()
+    if not scholar_id:
+        # 使用默认值（示例）
+        scholar_id = "B7vSqZsAAAAJ"  # Andrew Ng的Scholar ID作为示例
+        logging.warning(f"未设置环境变量 GOOGLE_SCHOLAR_ID, 使用默认示例ID: {scholar_id}")
     
-    # 3. 处理失败情况
-    if not author_data:
-        logging.warning("主要方法失败，尝试备选方案...")
-        author_data = manual_fallback(scholar_id)
+    logging.info(f"目标学者ID: {scholar_id}")
     
-    # 4. 添加更新时间戳
-    author_data["updated"] = str(datetime.now())
+    try:
+        # 获取数据
+        start_time = time.time()
+        scholar_data = simulate_scholar_api(scholar_id)
+        elapsed = time.time() - start_time
+        
+        # 添加处理时间
+        scholar_data["processing_time"] = f"{elapsed:.2f} 秒"
+        
+        # 保存结果
+        save_results(scholar_data)
+        
+        # 成功日志
+        logging.info(f"成功抓取数据! 用时 {elapsed:.2f} 秒")
+        logging.info(f"- 姓名: {scholar_data['name']}")
+        logging.info(f"- 被引次数: {scholar_data['citedby']}")
+        logging.info(f"- h-index: {scholar_data['hindex']}")
+        
+    except Exception as e:
+        # 创建错误报告
+        error_data = {
+            "error": f"抓取失败: {str(e)}",
+            "scholar_id": scholar_id,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # 保存错误结果而不是让整个流程失败
+        save_results(error_data)
+        logging.error(f"发生无法处理的错误: {str(e)}")
     
-    # 5. 处理数据
-    final_data = process_data(author_data)
-    
-    # 6. 保存结果
-    os.makedirs('results', exist_ok=True)
-    
-    # 保存完整数据
-    with open('results/gs_data.json', 'w') as f:
-        json.dump(final_data, f, indent=2, ensure_ascii=False)
-    
-    # 保存屏蔽徽章数据
-    shield_data = {
-        "schemaVersion": 1,
-        "label": "Google Scholar 引用",
-        "message": f"{final_data.get('citedby', 0)}",
-        "color": "blue",
-        "namedLogo": "google scholar",
-        "logoSvg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#4285F4" d="M12 24a7 7 0 100-14 7 7 0 000 14z"/><path fill="#34A853" d="M18 10A6 6 0 116 10c0 3.32 2.69 6 6 6s6-2.68 6-6z"/><path fill="#FBBC05" d="M12 7a3 3 0 100 6 3 3 0 000-6z"/><path fill="#EA4335" d="M12 16c-2.76 0-5-1.79-5-4h10c0 2.21-2.24 4-5 4z"/></svg>'
-    }
-    
-    with open('results/gs_data_shieldsio.json', 'w') as f:
-        json.dump(shield_data, f)
-    
-    # 保存文本文件便于在 Actions 日志中查看
-    with open('results/summary.txt', 'w') as f:
-        f.write(f"更新于: {final_data['updated']}\n")
-        f.write(f"姓名: {final_data['name']}\n")
-        f.write(f"引用次数: {final_data['citedby']}\n")
-        f.write(f"h-index: {final_data['hindex']}\n")
-    
-    logging.info("=" * 60)
-    logging.info("数据抓取完成!")
-    logging.info(f"- 被引次数: {final_data['citedby']}")
-    logging.info(f"- H指数: {final_data['hindex']}")
-    logging.info(f"- 出版物数量: {final_data['total_publications']}")
-    logging.info(f"数据来源: {final_data.get('source', 'scholarly')}")
-    logging.info("=" * 60)
+    finally:
+        logging.info("=" * 50)
+        logging.info("流程完成\n")
