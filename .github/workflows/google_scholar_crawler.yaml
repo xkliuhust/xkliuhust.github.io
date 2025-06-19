@@ -2,53 +2,51 @@ name: Update Scholar Data
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # 每天 UTC 5:00 运行（约北京/香港时间下午1点）
+    # 每天运行两次：UTC 2:00 和 UTC 14:00（北京时间10:00和22:00）
+    - cron: '0 2 * * *'
+    - cron: '0 14 * * *'
   workflow_dispatch:  # 允许手动触发
 
 jobs:
-  update-scholar-data:
+  update-scholar:
     runs-on: ubuntu-latest
-    env:
-      GOOGLE_SCHOLAR_ID: ${{ secrets.SCHOLAR_ID }}  # 需要在仓库设置中添加
+    timeout-minutes: 10  # 设置超时防止卡死
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
-
+      uses: actions/checkout@v4
+      
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-
-    - name: Install Tor service
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y tor
+        cache: 'pip'
         
-        # 配置非默认端口
-        echo "SocksPort 0.0.0.0:9050" | sudo tee -a /etc/tor/torrc
-        sudo service tor restart
-        sleep 5
-        
-        # 验证 Tor 是否运行
-        curl --socks5 localhost:9050 --socks5-hostname localhost:9050 -s https://check.torproject.org/ | cat | grep -m 1 Congratulations
-
     - name: Install dependencies
       run: |
-        pip install scholarly requests beautifulsoup4
-
-    - name: Run scholar scraper
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4
+        
+    - name: Run Scholar Scraper
       run: |
-        echo "GITHUB_SHA=$GITHUB_SHA"
-        time python scholar_scraper.py
-      env:
-        USE_TOR_PROXY: "true"  # 使用Tor代理
-        # USE_TOR_PROXY: "false"  # 使用免费代理
-
-    - name: Commit and push changes
+        # 如果设置了环境变量则使用，否则脚本会使用示例ID
+        if [ -n "${{ secrets.SCHOLAR_ID }}" ]; then
+          export GOOGLE_SCHOLAR_ID="${{ secrets.SCHOLAR_ID }}"
+          echo "使用Secret中的Scholar ID"
+        fi
+        
+        python scholar_scraper.py
+        
+    - name: Commit changes
       run: |
-        git config --local user.email "actions@github.com"
-        git config --local user.name "GitHub Actions"
-        git add results
-        git commit -m "自动更新学术数据 - $(date '+%Y-%m-%d %H:%M:%S') UTC"
-        git push
+        git config user.email "actions@github.com"
+        git config user.name "Scholar Data Updater"
+        
+        # 检查是否有变更
+        if git diff-index --quiet HEAD --; then
+          echo "无变更需要提交"
+        else
+          git add results
+          git commit -m "自动更新Google Scholar数据 [skip ci]"
+          git push
+        fi
