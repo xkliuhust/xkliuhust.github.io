@@ -24,8 +24,8 @@ redirect_from:
 </div>
 ---
 
-<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ'>Google Scholar Citations <strong><span id='total_cit'>[loading]</span></strong></a>  
-<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ'><img src="https://img.shields.io/endpoint?url={{ url | url_encode }}&logo=Google%20Scholar&labelColor=f6f6f6&color=9cf&style=flat&label=citations"></a>
+<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>Google Scholar Citations <strong><span id='total_cit'>[loading]</span></strong></a>  
+<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'><img src="https://img.shields.io/endpoint?url={{ url | url_encode }}&logo=Google%20Scholar&labelColor=f6f6f6&color=9cf&style=flat&label=citations"></a>
 
 ---
 
