@@ -24,8 +24,10 @@ redirect_from:
 </div>
 ---
 
-<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>Google Scholar Citations <strong><span id='total_cit'>[loading]</span></strong></a>  
-<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'><img src="https://img.shields.io/endpoint?url={{ url | url_encode }}&logo=Google%20Scholar&labelColor=f6f6f6&color=9cf&style=flat&label=citations"></a>
+<a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>
+  <img src="https://img.shields.io/static/v1?label=Google%20Scholar&message=2383%3A%201234&color=9cf&logo=Google%20Scholar&labelColor=f6f6f6&style=flat">
+</a>
+
 
 ---
 
