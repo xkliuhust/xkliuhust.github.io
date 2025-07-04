@@ -25,7 +25,7 @@ redirect_from:
 ---
 
 <a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>
-  <img src="https://img.shields.io/static/v1?label=Google%20Scholar&message=citations%3A%202383&color=9cf&logo=Google%20Scholar&labelColor=f6f6f6&style=flat">
+  <img src="https://img.shields.io/static/v1?label=Google%20Scholar&message=Citations%3A%202383&color=9cf&logo=Google%20Scholar&labelColor=f6f6f6&style=flat">
 </a>
 
 
