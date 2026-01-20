@@ -20,12 +20,12 @@ redirect_from:
 
 # 👨‍🏫 About Me 
 <div style="text-align: justify;">
-**Xiao-Kang Liu** is an Associate Professor at the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received his B.ENg. in Automation (2014) and his Ph.D. in Control Science and Engineering (2019), both from HUST. His research focuses on collaborative control theory and applications, including the hybrid cooperative control of multi-agent systems and cooperative control/optimization of microgrid systems. He has led research projects funded by the National Natural Science Foundation of China (General and Youth Programs), the Natural Science Foundation of Hubei Province, and Ministry of Education educational reform programs. Dr. Liu was selected for the Wuhan Young Talents Program and the China Association for Science and Technology Youth Talent Support Project.
+**Xiao-Kang Liu** is an Associate Professor at the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received B.ENg. in Automation (2014) and  Ph.D. in Control Science and Engineering (2019), at HUST. His research focuses on collaborative control theory and applications, including the hybrid cooperative control of multi-agent systems and cooperative control/optimization of microgrid systems. 
 </div>
 ---
 
 <a href='https://scholar.google.com/citations?user=4TKvXE8AAAAJ&hl=en'>
-  <img src="https://img.shields.io/static/v1?label=Google%20Scholar&message=Citations%3A%202479&color=9cf&logo=Google%20Scholar&labelColor=f6f6f6&style=flat">
+  <img src="https://img.shields.io/static/v1?label=Google%20Scholar&message=Citations%3A%202737&color=9cf&logo=Google%20Scholar&labelColor=f6f6f6&style=flat">
 </a>
 
 
