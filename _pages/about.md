@@ -18,7 +18,7 @@ redirect_from:
 
 <span class='anchor' id='about-me'></span>
 
-# 👨‍🏫 About Me 
+# 👨‍🏫 Biography 
 <div style="text-align: justify;">
 **Xiao-Kang Liu** is an Associate Professor at the School of Artificial Intelligence and Automation, Huazhong University of Science and Technology (HUST). He received B.ENg. in Automation (2014) and  Ph.D. in Control Science and Engineering (2019), at HUST. His research focuses on collaborative control theory and applications, including the hybrid cooperative control of multi-agent systems and cooperative control/optimization of microgrid systems. 
 </div>
@@ -43,7 +43,7 @@ redirect_from:
 ---
 
 <span class='anchor' id='positions'></span>
-# 💼 Academic Positions
+# 💼 Academic Experience
 
 - **2024.02 – Present**  
   Associate Professor, School of Artificial Intelligence and Automation, HUST  
@@ -66,7 +66,7 @@ redirect_from:
 ---
 
 <span class='anchor' id='courses'></span>
-# 📚 Courses
+# 📚 Teaching Experiences 
 
 **Undergraduate**:
 - Principles of Automatic Control (I) 
@@ -76,15 +76,6 @@ redirect_from:
 **Postgraduate**:
 - Adaptive and Learning Systems  
 - Academic Writing and Research Ethics
-
----
-
-<span class='anchor' id='research'></span>
-# 🔬 Research Interests
-
-- Distributed coordination and swarm intelligence  
-
-- Control and optimization of smart grids  
 
 ---
 
